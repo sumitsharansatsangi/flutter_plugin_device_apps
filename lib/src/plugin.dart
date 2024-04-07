@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'model/application_category.dart';
-import 'model/application_event.dart';
 
 /// Plugin to list applications installed on an Android device
 /// iOS is not supported
@@ -26,7 +25,7 @@ class DeviceApps {
   static Future<List<Application>> getInstalledApplications({
     bool includeSystemApps = false,
     bool includeAppIcons = false,
-    bool onlyAppsWithLaunchIntent= false,
+    bool onlyAppsWithLaunchIntent = false,
   }) async {
     try {
       final Object apps =
@@ -181,6 +180,7 @@ class _BaseApplication {
 
 /// An application installed on the device
 /// Depending on the Android version, some attributes may not be available
+@immutable
 class Application extends _BaseApplication {
   /// Displayable name of the application
   final String appName;
@@ -218,15 +218,16 @@ class Application extends _BaseApplication {
   /// or disabled (installed, but not visible)
   final bool enabled;
 
+  final String? _icon;
+
+  /// Icon of the application to use in conjunction with [Image.memory]
+  Uint8List? get icon => _icon == null ? null : base64.decode(_icon);
+
   factory Application._(Map<dynamic, dynamic> map) {
     if (map.length == 0) {
       throw Exception('The map can not be null!');
     }
-    if (map.containsKey('app_icon')) {
-      return ApplicationWithIcon._fromMap(map);
-    } else {
-      return Application._fromMap(map);
-    }
+    return Application._fromMap(map);
   }
 
   Application._fromMap(Map<dynamic, dynamic> map)
@@ -240,6 +241,7 @@ class Application extends _BaseApplication {
         updateTimeMillis = map['update_time'] as int,
         enabled = map['is_enabled'] as bool,
         category = _parseCategory(map['category']),
+        _icon = map['app_icon'] as String?,
         super._fromMap(map);
 
   /// Mapping of Android categories
@@ -304,6 +306,7 @@ class Application extends _BaseApplication {
         'updateTimeMillis: $updateTimeMillis, '
         'category: $category, '
         'enabled: $enabled'
+        'icon: $icon'
         '}';
   }
 
@@ -322,7 +325,8 @@ class Application extends _BaseApplication {
           installTimeMillis == other.installTimeMillis &&
           updateTimeMillis == other.updateTimeMillis &&
           category == other.category &&
-          enabled == other.enabled;
+          enabled == other.enabled &&
+          icon == other.icon;
 
   @override
   int get hashCode =>
@@ -336,36 +340,8 @@ class Application extends _BaseApplication {
       installTimeMillis.hashCode ^
       updateTimeMillis.hashCode ^
       category.hashCode ^
-      enabled.hashCode;
-}
-
-/// If the [includeAppIcons] attribute is provided, this class will be used.
-/// To display an image simply use the [Image.memory] widget.
-/// Example:
-///
-/// ```
-/// Image.memory(app.icon)
-/// ```
-class ApplicationWithIcon extends Application {
-  final String _icon;
-
-  ApplicationWithIcon._fromMap(Map<dynamic, dynamic> map)
-      : _icon = map['app_icon'] as String,
-        super._fromMap(map);
-
-  /// Icon of the application to use in conjunction with [Image.memory]
-  Uint8List get icon => base64.decode(_icon);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      super == other &&
-          other is ApplicationWithIcon &&
-          runtimeType == other.runtimeType &&
-          _icon == other._icon;
-
-  @override
-  int get hashCode => super.hashCode ^ _icon.hashCode;
+      enabled.hashCode ^
+      icon.hashCode;
 }
 
 /// Represent an event relative to an application, which can be:
@@ -377,7 +353,7 @@ class ApplicationWithIcon extends Application {
 ///
 /// Note: an [Application] is not available directly in this object, as it would
 /// be null in the case of an uninstallation
-abstract class ApplicationEvent {
+sealed class ApplicationEvent {
   final DateTime time;
 
   factory ApplicationEvent._(Map<dynamic, dynamic> map) {
@@ -409,12 +385,9 @@ abstract class ApplicationEvent {
   /// The package name of the application related to this event
   String get packageName;
 
-  /// The event type will help check if the app is installed or not
-  ApplicationEventType get event;
-
   @override
   String toString() {
-    return 'event: $event, time: $time';
+    return 'event: ${this.runtimeType}, time: $time';
   }
 
   @override
@@ -422,10 +395,10 @@ abstract class ApplicationEvent {
       identical(this, other) ||
       other is ApplicationEvent &&
           runtimeType == other.runtimeType &&
-          event == other.event;
+          packageName == other.packageName;
 
   @override
-  int get hashCode => event.hashCode;
+  int get hashCode => runtimeType.hashCode ^ packageName.hashCode;
 }
 
 class ApplicationEventInstalled extends ApplicationEvent {
@@ -434,9 +407,6 @@ class ApplicationEventInstalled extends ApplicationEvent {
   ApplicationEventInstalled._fromMap(Map<dynamic, dynamic> map)
       : application = Application._(map),
         super._fromMap(map);
-
-  @override
-  ApplicationEventType get event => ApplicationEventType.installed;
 
   @override
   String get packageName => application.packageName;
@@ -464,9 +434,6 @@ class ApplicationEventUpdated extends ApplicationEvent {
   ApplicationEventUpdated._fromMap(Map<dynamic, dynamic> map)
       : application = Application._(map),
         super._fromMap(map);
-
-  @override
-  ApplicationEventType get event => ApplicationEventType.updated;
 
   @override
   String get packageName => application.packageName;
@@ -499,9 +466,6 @@ class ApplicationEventUninstalled extends ApplicationEvent {
   String get packageName => _application.packageName;
 
   @override
-  ApplicationEventType get event => ApplicationEventType.uninstalled;
-
-  @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       super == other &&
@@ -524,9 +488,6 @@ class ApplicationEventEnabled extends ApplicationEvent {
   ApplicationEventEnabled._fromMap(Map<dynamic, dynamic> map)
       : application = Application._(map),
         super._fromMap(map);
-
-  @override
-  ApplicationEventType get event => ApplicationEventType.enabled;
 
   @override
   String get packageName => application.packageName;
@@ -554,9 +515,6 @@ class ApplicationEventDisabled extends ApplicationEvent {
   ApplicationEventDisabled._fromMap(Map<dynamic, dynamic> map)
       : application = Application._(map),
         super._fromMap(map);
-
-  @override
-  ApplicationEventType get event => ApplicationEventType.disabled;
 
   @override
   String get packageName => application.packageName;
