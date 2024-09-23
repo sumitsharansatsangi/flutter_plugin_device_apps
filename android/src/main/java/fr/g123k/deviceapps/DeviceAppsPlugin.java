@@ -83,17 +83,7 @@ public class DeviceAppsPlugin implements
                 boolean systemApps = call.hasArgument("system_apps") && (Boolean) (call.argument("system_apps"));
                 boolean includeAppIcons = call.hasArgument("include_app_icons") && (Boolean) (call.argument("include_app_icons"));
                 boolean onlyAppsWithLaunchIntent = call.hasArgument("only_apps_with_launch_intent") && (Boolean) (call.argument("only_apps_with_launch_intent"));
-                fetchInstalledApps(systemApps, includeAppIcons, onlyAppsWithLaunchIntent, new InstalledAppsCallback() {
-                    @Override
-                    public void onInstalledAppsListAvailable(final List<Map<String, Object>> apps) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                result.success(apps);
-                            }
-                        });
-                    }
-                });
+                fetchInstalledApps(systemApps, includeAppIcons, onlyAppsWithLaunchIntent, apps -> new Handler(Looper.getMainLooper()).post(() -> result.success(apps)));
                 break;
             case "getApp":
                 if (!call.hasArgument("package_name") || TextUtils.isEmpty(call.argument("package_name").toString())) {
@@ -142,17 +132,12 @@ public class DeviceAppsPlugin implements
     }
 
     private void fetchInstalledApps(final boolean includeSystemApps, final boolean includeAppIcons, final boolean onlyAppsWithLaunchIntent, final InstalledAppsCallback callback) {
-        asyncWork.run(new Runnable() {
+        asyncWork.run(() -> {
+            List<Map<String, Object>> installedApps = getInstalledApps(includeSystemApps, includeAppIcons, onlyAppsWithLaunchIntent);
 
-            @Override
-            public void run() {
-                List<Map<String, Object>> installedApps = getInstalledApps(includeSystemApps, includeAppIcons, onlyAppsWithLaunchIntent);
-
-                if (callback != null) {
-                    callback.onInstalledAppsListAvailable(installedApps);
-                }
+            if (callback != null) {
+                callback.onInstalledAppsListAvailable(installedApps);
             }
-
         });
     }
 

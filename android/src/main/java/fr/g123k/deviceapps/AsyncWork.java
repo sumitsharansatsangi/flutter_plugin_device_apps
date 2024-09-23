@@ -8,10 +8,9 @@ import java.util.concurrent.TimeUnit;
 class AsyncWork {
 
     private final ThreadPoolExecutor threadPoolExecutor;
-    private final BlockingQueue<Runnable> workQueue;
 
     AsyncWork() {
-        this.workQueue = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
         this.threadPoolExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, workQueue);
     }
 

@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import androidx.annotation.NonNull;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import io.flutter.plugin.common.EventChannel;
@@ -45,11 +46,11 @@ public class DeviceAppsChangedListener {
         appsBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String packageName = intent.getDataString().replace("package:", "");
+                String packageName = Objects.requireNonNull(intent.getDataString()).replace("package:", "");
 
-                boolean replacing = intent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false);
+                boolean replacing = Objects.requireNonNull(intent.getExtras()).getBoolean(Intent.EXTRA_REPLACING, false);
 
-                switch (intent.getAction()) {
+                switch (Objects.requireNonNull(intent.getAction())) {
                     case Intent.ACTION_PACKAGE_ADDED:
                         if (!replacing) {
                             onPackageInstalled(packageName);
@@ -60,6 +61,7 @@ public class DeviceAppsChangedListener {
                         break;
                     case Intent.ACTION_PACKAGE_CHANGED:
                         String[] components = intent.getExtras().getStringArray(Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST);
+                        assert components != null;
                         if (components.length == 1 && components[0].equalsIgnoreCase(packageName)) {
                             onPackageChanged(packageName);
                         }
