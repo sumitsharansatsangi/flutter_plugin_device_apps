@@ -4,8 +4,8 @@ version: 2.2.0
 homepage: https://github.com/g123k/flutter_plugin_device_apps
 
 environment:
-  sdk: '>=3.3.3 <4.0.0'
-  flutter: ">=3.19.0"
+  sdk: '>=3.5.2 <4.0.0'
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
