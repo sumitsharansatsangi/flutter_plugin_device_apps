@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.android.tools.build:gradle:8.7.2'
     }
 }
 
@@ -22,7 +22,7 @@ allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdk 34
+    compileSdk 35
     namespace "fr.g123k.deviceapps"
     defaultConfig {
         minSdkVersion 16
@@ -34,6 +34,6 @@ android {
     }
 
     dependencies {
-        implementation 'androidx.annotation:annotation:1.8.2'
+        implementation 'androidx.annotation:annotation:1.9.1'
     }
 }
